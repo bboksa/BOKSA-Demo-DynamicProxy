@@ -13,28 +13,32 @@ import javassist.util.proxy.ProxyFactory;
 
 public class LegoKisteProxyFactory {
 
-	public static LegoKiste createProxy() throws ReflectiveOperationException, IllegalArgumentException, SecurityException {
+	public static LegoKiste createProxy()
+			throws ReflectiveOperationException, IllegalArgumentException, SecurityException {
 		ProxyFactory factory = new ProxyFactory();
 		factory.setSuperclass(LegoKiste.class);
+		
 		factory.setFilter(method -> "wirfSteinHinein".equals(method.getName()));
+
 		Class<?> legoKisteProxyClass = factory.createClass();
-		LegoKiste legoKiste = (LegoKiste) legoKisteProxyClass.getConstructor()
-				.newInstance();
-		((Proxy) legoKiste).setHandler(new WirfSteinHineinMethodHandler());
-		return legoKiste;
+
+		Object legoKisteProxy = legoKisteProxyClass.getConstructor().newInstance();
+		((Proxy) legoKisteProxy).setHandler(new WirfSteinHineinMethodHandler());
+
+		return (LegoKiste) legoKisteProxy;
 	}
-	
+
 	private static final class WirfSteinHineinMethodHandler implements MethodHandler {
-		
+
 		private final Logger log = LoggerFactory.getLogger(LegoKiste.class);
-		
+
 		public Object invoke(Object self, Method method, Method proceed, Object[] args) throws Throwable {
 			LegoKiste legoKiste = (LegoKiste) self;
 			log.debug("•");
-			legoKiste.getLegosteine().add((LegoStein) args[0]);			
+			legoKiste.getLegosteine().add((LegoStein) args[0]);
 			return null;
 		}
-		
+
 	}
 
 }

@@ -12,5 +12,7 @@ public interface Baustein {
 	BausteinForm getForm();
 	
 	void trittDrauf();
+
+	Class<?> typeOf();
 	
 }

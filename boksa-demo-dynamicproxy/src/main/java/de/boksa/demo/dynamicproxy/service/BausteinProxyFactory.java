@@ -3,12 +3,14 @@ package de.boksa.demo.dynamicproxy.service;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import de.boksa.demo.dynamicproxy.external.model.HolzBaustein;
 import de.boksa.demo.dynamicproxy.external.model.LegoStein;
 import de.boksa.demo.dynamicproxy.model.Baustein;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 public class BausteinProxyFactory {
@@ -23,25 +25,41 @@ public class BausteinProxyFactory {
 		// @formatter:on
 	}
 
-	@RequiredArgsConstructor
 	@Slf4j
 	private static class BausteinCommonMethodsInvocationHandler implements InvocationHandler {
 
 		private final Object target;
 
+		private final Map<String, Supplier<?>> methodDispatcher = new HashMap<>();
+
+		public BausteinCommonMethodsInvocationHandler(Object target) {
+			this.target = target;
+			
+			methodDispatcher.put("trittDrauf", () -> { this.trittDrauf(); return null; });			
+			methodDispatcher.put("typeOf", this::typeOf);			
+		}
+
 		@Override
-		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+		public Object invoke(Object proxy, Method methodOnProxy, Object[] args) throws Throwable {
 			Object result = null;
-			if (method.getName().equals("trittDrauf")) {
-				this.trittDrauf();
-			} else {
-				Method resolvedMethod = this.findMethodOnTarget(method).orElse(method);
+
+			Optional<Supplier<?>> dispatchedMethod = Optional.ofNullable(this.methodDispatcher.get(methodOnProxy.getName()));
+
+			if (dispatchedMethod.isPresent()) {
+				result = dispatchedMethod.get().get();
+			} else {			
+				Optional<Method> methodOnTarget = BausteinCommonMethodsInvocationHandler.findMethodOnObject(target, methodOnProxy);
+				Method resolvedMethod = methodOnTarget.orElse(methodOnProxy);
 				result = resolvedMethod.invoke(target, args);
 			}
 			return result;
 		}
 
-		private void trittDrauf() {
+		private Class<?> typeOf() {
+			return target.getClass();
+		}
+
+		public void trittDrauf() {
 			if (HolzBaustein.class.isAssignableFrom(target.getClass())) {
 				log.info("autsch!");
 			} else if (LegoStein.class.isAssignableFrom(target.getClass())) {
@@ -54,10 +72,10 @@ public class BausteinProxyFactory {
 			}
 		}
 
-		private Optional<Method> findMethodOnTarget(Method method) {
+		private static Optional<Method> findMethodOnObject(Object object, Method method) {
 			Method resultMethod = null;
 			try {
-				resultMethod = target.getClass().getMethod(method.getName(), method.getParameterTypes());
+				resultMethod = object.getClass().getMethod(method.getName(), method.getParameterTypes());
 			} catch (NoSuchMethodException | SecurityException ex) {
 			}
 			return Optional.ofNullable(resultMethod);

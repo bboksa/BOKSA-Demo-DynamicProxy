@@ -6,6 +6,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import de.boksa.demo.dynamicproxy.external.model.HolzBaustein;
+import de.boksa.demo.dynamicproxy.external.model.LegoStein;
 import de.boksa.demo.dynamicproxy.model.Baustein;
 
 public class BausteinTest {
@@ -23,6 +25,20 @@ public class BausteinTest {
 		bausteine.forEach(Baustein::trittDrauf);
 		
 		Assert.assertTrue(true);
+	}
+
+	@Test
+	public void testLego() {		
+		boolean hasLegoSteinType = bausteine.stream().anyMatch(baustein -> LegoStein.class.isAssignableFrom(baustein.typeOf()));
+		
+		Assert.assertTrue(hasLegoSteinType);
+	}
+
+	@Test
+	public void testHolz() {		
+		boolean hasHolzBausteinType = bausteine.stream().anyMatch(baustein -> HolzBaustein.class.isAssignableFrom(baustein.typeOf()));
+		
+		Assert.assertTrue(hasHolzBausteinType);
 	}
 
 }
